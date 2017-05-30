@@ -105,7 +105,6 @@ usage:
                            [-clip FRACTION_NUMS [FRACTION_NUMS ...]] [-q] [-log]
                            CSV_FILES [CSV_FILES ...]
 
-
 positional arguments:
 
     CSV_FILES             Input file paths of CSV files containing spectral
@@ -113,6 +112,7 @@ positional arguments:
                           wildcards)
 
 optional arguments:
+
     -h, --help            show this help message and exit
     -o OUT_CSV_FILE       Optional output file path for CSV file containing
                           merged spectral count data; Default
