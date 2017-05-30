@@ -1,0 +1,6 @@
+#!/bin/sh
+
+export MS_FRACTION_MERGE_DIR="$(cd $(dirname "$0"); pwd)"
+export PYTHONPATH="${PYTHONPATH}:.:${MS_FRACTION_MERGE_DIR}"
+
+python ${MS_FRACTION_MERGE_DIR}/ms_fraction_merge.py $*
