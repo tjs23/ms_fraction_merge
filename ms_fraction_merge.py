@@ -7,7 +7,7 @@ from glob import glob
 from collections import defaultdict
 
 PROG_NAME   = 'ms_fraction_merge'
-DESCRIPTION = 'This software merges fractionated mass specrometry abundance profiles from replicate experiments where fraction data is not immediately comparable between replicates and must first be aligned to combine equivalent fractions'
+DESCRIPTION = 'This software merges fractionated mass spectrometry abundance profiles from replicate experiments where fraction data is not immediately comparable between replicates and must first be aligned to combine equivalent fractions'
 
 DEFAULT_MIN_REPS  = 3
 DEFAULT_OUT_FRACS = 25
@@ -77,7 +77,7 @@ def load_spectral_counts(file_paths, min_reps, clip_fracs):
   """
   Load replicate spectral count data from CSV files into NumPy arrays.
   Data will be first row normalised (per protein) by adjusting the minimum to zero and dividing by the
-  row sum. Columns are scaled by dviding by thier median.
+  row sum. Columns are scaled by dividing by their median.
   """
   
   data = []
@@ -180,7 +180,7 @@ def load_spectral_counts(file_paths, min_reps, clip_fracs):
 def get_comp_matrix_regions(comp_matrix):
   """
   Small function to get the starting fraction region boundaries for
-  a given compisition matrix
+  a given composition matrix
   """
   
   n_col, n_prot = comp_matrix.shape
@@ -247,7 +247,7 @@ def interpolate_comp_matrix_regions(comp_matrix):
   
 def get_sim_score(abun_a, abun_b, weight, default=-1.0):
   """
-  Function to get the width-weighted similarity score (Pearsons correlation) between abundance profiles
+  Function to get the width-weighted similarity score (Pearson's correlation) between abundance profiles
   """
   
   idx = (abun_a * abun_b).nonzero()  
@@ -260,7 +260,7 @@ def get_sim_score(abun_a, abun_b, weight, default=-1.0):
 def overlap_region_comps(regions_a, comps_a, regions_b, comps_b,
                          contrib_a=1.0, contrib_b=1.0, insignificant=1e-4):
   """
-  Function to caculate a score for a trial overlap between two fraction region
+  Function to calculate a score for a trial overlap between two fraction region
   specifications with corresponding component/protein compositions
   """
   
@@ -683,7 +683,7 @@ def ms_fraction_merge(rep_csv_paths, out_csv_path, marker_csv_paths,
   pair_scores.sort()
   
   while pair_scores: # Merge in score order, adding only to the previous merged data
-    score, regs, comps, i, j = pair_scores.pop() # (Next) higest score
+    score, regs, comps, i, j = pair_scores.pop() # (Next) highest score
     
     if merged: # Merge to previous
       if (i in merged) and (j in merged):
@@ -754,7 +754,7 @@ if __name__ == '__main__':
                          help='Input file paths of CSV files containing spectral count data, one for each replicate (may contain wildcards)') 
 
   arg_parse.add_argument('-o', metavar='OUT_CSV_FILE', default=DEFAULT_OUT_FILE,
-                         help='Optional putput file path for CSV file containing merged spectral count data; Default %s' % DEFAULT_OUT_FILE) 
+                         help='Optional output file path for CSV file containing merged spectral count data; Default %s' % DEFAULT_OUT_FILE) 
 
   arg_parse.add_argument('-c', nargs='+', metavar='CATEGORY_CSV_FILE', default=None,
                          help='One or more optional CSV files describing categories/classes, e.g. for marker proteins, relating to the input data (may contain wildcards)') 
@@ -769,19 +769,19 @@ if __name__ == '__main__':
                          help='The maximum number of whole columns that could offset the first values between different replicate data; defines the width of the offset parameter search space. Default: %.2f' % DEFAULT_OFFSET_MAX) 
   
   arg_parse.add_argument('-ostep', metavar='STEP', default=DEFAULT_OFFSET_STEP, type=float,
-                         help='The fractional increment in column widths to use when aligning replicate data; defines the granularty of the offset parameter search space. Default: %.2f' % DEFAULT_OFFSET_STEP) 
+                         help='The fractional increment in column widths to use when aligning replicate data; defines the granularity of the offset parameter search space. Default: %.2f' % DEFAULT_OFFSET_STEP) 
   
   arg_parse.add_argument('-smax', metavar='MAX_SCALE', default=DEFAULT_SCALE_MAX, type=float,
                          help='The maximum stretch/compression scale factor between different replicate data; defines the width of the scale parameter search space. Default: %.2f' % DEFAULT_SCALE_MAX) 
   
   arg_parse.add_argument('-sstep', metavar='STEP', default=DEFAULT_SCALE_STEP, type=float,
-                         help='The increment in stretch scale factor use when aligning replicate data; defines the granularty of the scale parameter search space. Default: %.2f' % DEFAULT_SCALE_STEP) 
+                         help='The increment in stretch scale factor use when aligning replicate data; defines the granularity of the scale parameter search space. Default: %.2f' % DEFAULT_SCALE_STEP) 
    
   arg_parse.add_argument('-clip', nargs='+', metavar='FRACTION_NUMS', default=None, type=int,
                          help='Optional fraction numbers to clip input data at (one for each replicate in input order), i.e. beyond which there is no useful data') 
   
   arg_parse.add_argument('-q', default=False, action='store_true',
-                         help='Sets quiet mode to supress on-screen reporting.')
+                         help='Sets quiet mode to suppress on-screen reporting.')
   
   arg_parse.add_argument('-log', default=False, action='store_true',
                          help='Log all reported output to a file.')
@@ -804,12 +804,4 @@ if __name__ == '__main__':
   LOGGING = args['log']  
   
   ms_fraction_merge(rep_csvs, out_csv, mark_csvs, out_fracs, min_reps, clip_fracs, off_max, off_step, scale_max, scale_step)
-
-
-
-
-
-
-
-
 
