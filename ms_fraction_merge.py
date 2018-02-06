@@ -18,9 +18,9 @@ LOGGING = False
 LOG_FILE_PATH = 'ms-frac-merge-out-%s.log' % uuid.uuid4()
 LOG_FILE_OBJ = None # Created when needed
 
-DEFAULT_OFFSET_MAX  = 4.0
+DEFAULT_OFFSET_MAX  = 5.0
 DEFAULT_OFFSET_STEP = 0.5
-DEFAULT_SCALE_MAX   = 2.0
+DEFAULT_SCALE_MAX   = 2.5
 DEFAULT_SCALE_STEP  = 0.2
 
 
@@ -135,7 +135,7 @@ def load_spectral_counts(file_paths, min_reps, clip_fracs):
          
         rep_data[pid] = prot_dict
         rep_counts[pid] += 1
-
+  
   # Get common proteins with representation in the stated number of replicates
   common_pids = {pid for pid in rep_counts if rep_counts[pid] >= min_reps}
   common_pids = sorted(common_pids)
@@ -144,7 +144,7 @@ def load_spectral_counts(file_paths, min_reps, clip_fracs):
   n_cols = len(cols)
   n_prot = len(common_pids)
 
-  info("  loaded data for %d components over a total of fraction columns %d" % (n_prot, n_cols))
+  info("  loaded data for %d components over a total of %d fraction columns" % (n_prot, n_cols))
   
   comp_matrices = []
   comp_matrices_orig = []
@@ -163,7 +163,7 @@ def load_spectral_counts(file_paths, min_reps, clip_fracs):
     for i in range(n_prot):
       matrix[:,i] -= matrix[:,i].min()
       matrix[:,i] /= matrix[:,i].sum() or 1.0
- 
+
     for i in range(n_cols):
       col = matrix[i]
       col = col[col.nonzero()]
@@ -250,10 +250,15 @@ def get_sim_score(abun_a, abun_b, weight, default=-1.0):
   Function to get the width-weighted similarity score (Pearson's correlation) between abundance profiles
   """
   
-  idx = (abun_a * abun_b).nonzero()  
-  score = np.corrcoef(abun_a[idx], abun_b[idx])[0,1]
-  score *= weight # Scale score according to overlap region width
+  idx = (abun_a * abun_b).nonzero()[0]  
   
+  if len(idx):
+    score = np.corrcoef(abun_a[idx], abun_b[idx])[0,1]
+    score *= weight # Scale score according to overlap region width
+  
+  else:
+    score = 0.0
+ 
   return score
 
 
@@ -307,10 +312,10 @@ def overlap_region_comps(regions_a, comps_a, regions_b, comps_b,
     comp = (contrib_a * comps_a[0] + contrib_b * comps_b[0])/(contrib_a+contrib_b)
 
     if missing_a: # Missing proteins are not averaged with zero
-      comp[missing_a] = comps_b[0]
+      comp[missing_a] = comps_b[0][missing_a] 
 
     if missing_b:
-      comp[missing_b] = comps_a[0]
+      comp[missing_b] = comps_a[0][missing_b]
     
     merge_comps = [comp]
     delta = min(regions_a[1], regions_b[1]) - x_min
@@ -363,10 +368,10 @@ def overlap_region_comps(regions_a, comps_a, regions_b, comps_b,
             
             # Some proteins are missing in some replicates
             if missing_a: # Missing proteins are not averaged with zero
-              comp[missing_a] = comps_b[j]
+              comp[missing_a] = comps_b[j][missing_a]
 
             if missing_b:
-              comp[missing_b] = comps_a[i]
+              comp[missing_b] = comps_a[i][missing_b]
             
             merge_comps.append(comp)
            
@@ -407,10 +412,10 @@ def overlap_region_comps(regions_a, comps_a, regions_b, comps_b,
             comp = (weight_a*comps_a[i] + weight_b*comps_b[j])/(weight_a+weight_b)
             
             if missing_a: # Missing proteins are not averaged with zero
-              comp[missing_a] = comps_b[j]
+              comp[missing_a] = comps_b[j][missing_a]
 
             if missing_b:
-              comp[missing_b] = comps_a[i]
+              comp[missing_b] = comps_a[i][missing_b]
              
             merge_comps.append(comp)
 
@@ -443,14 +448,15 @@ def overlap_region_comps(regions_a, comps_a, regions_b, comps_b,
           comp = (contrib_a * comps_a[i] + contrib_b * comps_b[j])/(contrib_a+contrib_b)
             
           if missing_a: # Missing proteins are not averaged with zero
-            comp[missing_a] = comps_b[j]
+            comp[missing_a] = comps_b[j][missing_a]
 
           if missing_b:
-            comp[missing_b] = comps_a[i]
+            comp[missing_b] = comps_a[i][missing_b]
          
           merge_comps.append(comp)
  
           s = get_sim_score(comps_a[i], comps_b[j], delta)
+            
           sim_score += s
           sim_scores.append(s/delta)
           score_width += delta
@@ -482,7 +488,9 @@ def overlap_region_comps(regions_a, comps_a, regions_b, comps_b,
   else:
     merge_comps.append(comps_b[-1])
     sim_scores.append(0.0)
-  
+
+  sim_score /= score_width or 1.0
+    
   sim_scores = np.array(sim_scores)
   merge_regions = np.array(merge_regions)
   merge_comps =  np.array(merge_comps)
@@ -525,7 +533,7 @@ def merge_replicates(regions_a, comps_a, regions_b, comps_b, contrib_a=1.0, cont
                                   contrib_a, contrib_b)
                                   
          sim_scores, merge_regions, merge_comps, sim_score, score_width, p = d
-
+         
          if sim_score > best_score:
            best_scores = sim_scores
            best_score = sim_score
@@ -582,7 +590,7 @@ def sample_region_comps(regions, comps, n_samples):
   for i in range(n_samples):
     sampled_comp[i] /= weights[i]
       
-  return  sampled_comp   
+  return sampled_comp   
 
   
 def ms_fraction_merge(rep_csv_paths, out_csv_path, marker_csv_paths,
@@ -673,8 +681,8 @@ def ms_fraction_merge(rep_csv_paths, out_csv_path, marker_csv_paths,
        regs, comps, score = merge_replicates(regions[i], comp_matrices[i], regions[j], comp_matrices[j], 1.0, 1.0,
                                              offset_max, 1.0, scale_max, 0.5)
        pair_scores.append((score, regs, comps, i, j,))
-       
- 
+  
+  
   info('Optimising replicate alignment')  
   
   merged = set()
@@ -698,11 +706,11 @@ def ms_fraction_merge(rep_csv_paths, out_csv_path, marker_csv_paths,
       else: 
         continue # Not a merge to previous
       
+      weight = float(len(merged))
       merged.add(k)
       
       info('  merging %s' % '+'.join([str(x+1) for x in sorted(merged)]))
       
-      weight = float(len(merged)-1)
       merge_regions, merge_comps, score = merge_replicates(merge_regions, merge_comps, regions[k], comp_matrices[k],
                                                            weight, 1.0, offset_max, offset_step, scale_max, scale_step)
        
@@ -712,7 +720,6 @@ def ms_fraction_merge(rep_csv_paths, out_csv_path, marker_csv_paths,
       
       merge_regions, merge_comps, score = merge_replicates(regions[i], comp_matrices[i], regions[j], comp_matrices[j],
                                                            1.0, 1.0, offset_max, offset_step, scale_max, scale_step)
-      
   
   info('Resampling merged data over %d pseudo-fractions' % num_pseudo_fracs)
 
@@ -754,7 +761,7 @@ if __name__ == '__main__':
                          help='Input file paths of CSV files containing spectral count data, one for each replicate (may contain wildcards)') 
 
   arg_parse.add_argument('-o', metavar='OUT_CSV_FILE', default=DEFAULT_OUT_FILE,
-                         help='Optional output file path for CSV file containing merged spectral count data; Default %s' % DEFAULT_OUT_FILE) 
+                         help='Optional putput file path for CSV file containing merged spectral count data; Default %s' % DEFAULT_OUT_FILE) 
 
   arg_parse.add_argument('-c', nargs='+', metavar='CATEGORY_CSV_FILE', default=None,
                          help='One or more optional CSV files describing categories/classes, e.g. for marker proteins, relating to the input data (may contain wildcards)') 
@@ -769,19 +776,19 @@ if __name__ == '__main__':
                          help='The maximum number of whole columns that could offset the first values between different replicate data; defines the width of the offset parameter search space. Default: %.2f' % DEFAULT_OFFSET_MAX) 
   
   arg_parse.add_argument('-ostep', metavar='STEP', default=DEFAULT_OFFSET_STEP, type=float,
-                         help='The fractional increment in column widths to use when aligning replicate data; defines the granularity of the offset parameter search space. Default: %.2f' % DEFAULT_OFFSET_STEP) 
+                         help='The fractional increment in column widths to use when aligning replicate data; defines the granularty of the offset parameter search space. Default: %.2f' % DEFAULT_OFFSET_STEP) 
   
   arg_parse.add_argument('-smax', metavar='MAX_SCALE', default=DEFAULT_SCALE_MAX, type=float,
                          help='The maximum stretch/compression scale factor between different replicate data; defines the width of the scale parameter search space. Default: %.2f' % DEFAULT_SCALE_MAX) 
   
   arg_parse.add_argument('-sstep', metavar='STEP', default=DEFAULT_SCALE_STEP, type=float,
-                         help='The increment in stretch scale factor use when aligning replicate data; defines the granularity of the scale parameter search space. Default: %.2f' % DEFAULT_SCALE_STEP) 
+                         help='The increment in stretch scale factor use when aligning replicate data; defines the granularty of the scale parameter search space. Default: %.2f' % DEFAULT_SCALE_STEP) 
    
   arg_parse.add_argument('-clip', nargs='+', metavar='FRACTION_NUMS', default=None, type=int,
                          help='Optional fraction numbers to clip input data at (one for each replicate in input order), i.e. beyond which there is no useful data') 
   
   arg_parse.add_argument('-q', default=False, action='store_true',
-                         help='Sets quiet mode to suppress on-screen reporting.')
+                         help='Sets quiet mode to supress on-screen reporting.')
   
   arg_parse.add_argument('-log', default=False, action='store_true',
                          help='Log all reported output to a file.')
