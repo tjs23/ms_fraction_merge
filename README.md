@@ -145,7 +145,7 @@ optional arguments:
     -q                    Sets quiet mode to suppress on-screen reporting.
     -log                  Log all reported output to a file.
 
-For further help on running this program please email tjs23@cam.ac.uk.
+For further help on running this program please email tstevens@mrc-lmb.cam.ac.uk.
 
 Example use:
 
